@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "whatsapp-calorie-bot"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.75",
+    "python-dotenv",
+    "gdown",
+    "requests",
+]
+
+[project.scripts]
+whatsapp-calorie-bot = "whatsapp_calorie_bot.cli:main"
