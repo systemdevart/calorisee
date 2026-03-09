@@ -18,6 +18,7 @@ export interface DatasetListItem {
   created_at: string | null;
   date_range_start: string | null;
   date_range_end: string | null;
+  latest_job_id: string | null;
 }
 
 export interface ImportResponse {

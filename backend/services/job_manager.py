@@ -70,12 +70,35 @@ def get_job(job_id: str) -> dict | None:
 
 async def sse_generator(job_id: str):
     """Yield SSE events until job completes or fails."""
+    from backend.database import SessionLocal
+
     while True:
         mem = _jobs.get(job_id)
-        if not mem:
-            yield f"data: {json.dumps({'error': 'job not found'})}\n\n"
-            return
-        yield f"data: {json.dumps(mem)}\n\n"
-        if mem["status"] in ("completed", "failed"):
-            return
+        if mem:
+            yield f"data: {json.dumps(mem)}\n\n"
+            if mem["status"] in ("completed", "failed"):
+                return
+        else:
+            # Fallback to DB (e.g. after server restart)
+            db = SessionLocal()
+            try:
+                job = db.query(Job).get(job_id)
+                if job:
+                    data = {
+                        "id": job.id,
+                        "dataset_id": job.dataset_id,
+                        "status": job.status,
+                        "current_step": job.current_step or "",
+                        "percent": job.percent or 0,
+                        "message": job.message or "",
+                        "error": job.error,
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
+                    if job.status in ("completed", "failed"):
+                        return
+                else:
+                    yield f"data: {json.dumps({'error': 'job not found'})}\n\n"
+                    return
+            finally:
+                db.close()
         await asyncio.sleep(1)

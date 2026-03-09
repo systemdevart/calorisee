@@ -1,23 +1,14 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { getDashboardSummary, getDailyTimeseries, getTopItems, listDatasets } from '../api/client';
+import { getDashboardSummary, getDailyTimeseries, getTopItems } from '../api/client';
+import { useActiveDataset } from '../hooks/useActiveDataset';
 import KpiCard from '../components/KpiCard';
 import MacroBar from '../components/MacroBar';
 
 export default function DashboardPage() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const dsId = params.get('ds');
-
-  const { data: datasets } = useQuery({
-    queryKey: ['datasets'],
-    queryFn: listDatasets,
-    enabled: !dsId,
-  });
-
-  // Auto-select first completed dataset
-  const effectiveId = dsId || datasets?.find(d => d.status === 'completed')?.id;
+  const effectiveId = useActiveDataset();
 
   const { data: summary } = useQuery({
     queryKey: ['dashboard', 'summary', effectiveId],
@@ -39,9 +30,15 @@ export default function DashboardPage() {
 
   if (!effectiveId) {
     return (
-      <div className="text-center py-20">
-        <p className="text-gray-500">No dataset loaded.</p>
-        <button onClick={() => navigate('/')} className="mt-3 text-emerald-600 underline">Import one</button>
+      <div className="text-center py-20 space-y-4">
+        <p className="text-gray-500 text-lg">No dataset selected</p>
+        <p className="text-gray-400 text-sm">Import a new chat or select from your previous imports.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+        >
+          Go to Import
+        </button>
       </div>
     );
   }

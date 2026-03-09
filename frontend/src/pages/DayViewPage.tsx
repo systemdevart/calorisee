@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft } from 'lucide-react';
 import { getDayDetail } from '../api/client';
+import { useActiveDataset } from '../hooks/useActiveDataset';
 import MealCard from '../components/MealCard';
 import MacroBar from '../components/MacroBar';
 import MessageDetailModal from '../components/MessageDetailModal';
 
 export default function DayViewPage() {
   const { day } = useParams<{ day: string }>();
-  const [params] = useSearchParams();
   const navigate = useNavigate();
-  const dsId = params.get('ds') || '';
+  const dsId = useActiveDataset() || '';
   const [selectedMsg, setSelectedMsg] = useState<string | null>(null);
 
   const { data } = useQuery({

@@ -1,4 +1,4 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { BarChart3, Upload, Calendar } from 'lucide-react';
 
 const NAV = [
@@ -9,6 +9,8 @@ const NAV = [
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  const ds = params.get('ds');
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -17,10 +19,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="flex gap-1">
           {NAV.map(({ to, label, icon: Icon }) => {
             const active = pathname === to || (to !== '/' && pathname.startsWith(to));
+            const href = to === '/' ? to : ds ? `${to}?ds=${ds}` : to;
             return (
               <Link
                 key={to}
-                to={to}
+                to={href}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                   active ? 'bg-emerald-50 text-emerald-700' : 'text-gray-600 hover:bg-gray-100'
                 }`}

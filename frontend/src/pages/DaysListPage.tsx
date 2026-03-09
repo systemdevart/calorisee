@@ -1,13 +1,11 @@
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { listDays, listDatasets } from '../api/client';
+import { listDays } from '../api/client';
+import { useActiveDataset } from '../hooks/useActiveDataset';
 
 export default function DaysListPage() {
-  const [params] = useSearchParams();
   const navigate = useNavigate();
-
-  const { data: datasets } = useQuery({ queryKey: ['datasets'], queryFn: listDatasets });
-  const dsId = params.get('ds') || datasets?.find(d => d.status === 'completed')?.id;
+  const dsId = useActiveDataset();
 
   const { data: days } = useQuery({
     queryKey: ['days', dsId],
@@ -16,7 +14,18 @@ export default function DaysListPage() {
   });
 
   if (!dsId) {
-    return <div className="text-center py-20 text-gray-500">No dataset loaded. <button onClick={() => navigate('/')} className="text-emerald-600 underline">Import one</button></div>;
+    return (
+      <div className="text-center py-20 space-y-4">
+        <p className="text-gray-500 text-lg">No dataset selected</p>
+        <p className="text-gray-400 text-sm">Import a new chat or select from your previous imports.</p>
+        <button
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+        >
+          Go to Import
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -24,7 +33,7 @@ export default function DaysListPage() {
       <h1 className="text-2xl font-bold">Days</h1>
       {days && (
         <div className="space-y-2">
-          {days.map(day => (
+          {days.filter(day => day.total_calories > 0).map(day => (
             <button
               key={day.date}
               onClick={() => navigate(`/days/${day.date}?ds=${dsId}`)}

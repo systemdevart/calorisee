@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
 from sqlalchemy.orm import Session
 
 from backend.database import get_db, SessionLocal
-from backend.models import Dataset, new_id
+from backend.models import Dataset, Job, new_id
 from backend.schemas import DriveImportRequest, UploadImportFields, ImportResponse
 from backend.services.job_manager import create_job
 from backend.services.pipeline import run_import_pipeline
@@ -72,8 +72,10 @@ def import_from_upload(
 @router.get("")
 def list_datasets(db: Session = Depends(get_db)):
     datasets = db.query(Dataset).order_by(Dataset.created_at.desc()).all()
-    return [
-        {
+    result = []
+    for d in datasets:
+        latest_job = db.query(Job).filter(Job.dataset_id == d.id).order_by(Job.created_at.desc()).first()
+        result.append({
             "id": d.id,
             "name": d.name,
             "status": d.status,
@@ -81,9 +83,9 @@ def list_datasets(db: Session = Depends(get_db)):
             "created_at": d.created_at.isoformat() if d.created_at else None,
             "date_range_start": d.date_range_start,
             "date_range_end": d.date_range_end,
-        }
-        for d in datasets
-    ]
+            "latest_job_id": latest_job.id if latest_job else None,
+        })
+    return result
 
 
 @router.delete("/{dataset_id}")
