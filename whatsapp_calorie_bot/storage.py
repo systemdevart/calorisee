@@ -3,6 +3,7 @@
 import json
 import logging
 import sqlite3
+import threading
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -11,8 +12,9 @@ logger = logging.getLogger(__name__)
 class Storage:
     def __init__(self, db_path: Path):
         self.db_path = db_path
-        self.conn = sqlite3.connect(str(db_path))
+        self.conn = sqlite3.connect(str(db_path), check_same_thread=False)
         self.conn.row_factory = sqlite3.Row
+        self._lock = threading.Lock()
         self._create_tables()
         logger.info("Storage initialized at %s", db_path)
 
@@ -63,25 +65,27 @@ class Storage:
 
     def store_inference(self, msg_id: str, result: dict) -> None:
         """Store inference result for a message."""
-        self.conn.execute(
-            """INSERT OR REPLACE INTO inference
-               (msg_id, classification_json, estimation_json, model_text, model_vision)
-               VALUES (?, ?, ?, ?, ?)""",
-            (
-                msg_id,
-                json.dumps(result.get("classification")),
-                json.dumps(result.get("estimation")),
-                result.get("model_text", ""),
-                result.get("model_vision", ""),
-            ),
-        )
-        self.conn.commit()
+        with self._lock:
+            self.conn.execute(
+                """INSERT OR REPLACE INTO inference
+                   (msg_id, classification_json, estimation_json, model_text, model_vision)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (
+                    msg_id,
+                    json.dumps(result.get("classification")),
+                    json.dumps(result.get("estimation")),
+                    result.get("model_text", ""),
+                    result.get("model_vision", ""),
+                ),
+            )
+            self.conn.commit()
 
     def get_inference(self, msg_id: str) -> dict | None:
         """Get cached inference result for a message, or None."""
-        row = self.conn.execute(
-            "SELECT * FROM inference WHERE msg_id = ?", (msg_id,)
-        ).fetchone()
+        with self._lock:
+            row = self.conn.execute(
+                "SELECT * FROM inference WHERE msg_id = ?", (msg_id,)
+            ).fetchone()
         if not row:
             return None
         result = {}

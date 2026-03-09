@@ -48,7 +48,7 @@ def dashboard_summary(dataset_id: str, db: Session = Depends(get_db)):
     if not dataset:
         raise HTTPException(404, "Dataset not found")
 
-    tz = ZoneInfo(dataset.timezone or "America/Chicago")
+    tz = ZoneInfo(dataset.timezone or "Europe/Belgrade")
     food = _food_messages(db, dataset_id)
 
     daily_cals: dict[date, float] = defaultdict(float)
@@ -106,7 +106,7 @@ def daily_timeseries(dataset_id: str, db: Session = Depends(get_db)):
     if not dataset:
         raise HTTPException(404, "Dataset not found")
 
-    tz = ZoneInfo(dataset.timezone or "America/Chicago")
+    tz = ZoneInfo(dataset.timezone or "Europe/Belgrade")
     food = _food_messages(db, dataset_id)
 
     daily: dict[date, dict] = defaultdict(lambda: {"cal": 0, "pro": 0, "carb": 0, "fat": 0, "count": 0, "low": 0, "total": 0})

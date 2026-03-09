@@ -134,7 +134,7 @@ def _build_image_index(extract_dir: Path) -> dict[str, Path]:
 
 def parse_whatsapp_export(
     extract_dir: Path,
-    timezone: str = "America/Chicago",
+    timezone: str = "Europe/Belgrade",
     since: str | None = None,
     until: str | None = None,
     max_messages: int | None = None,
@@ -143,8 +143,8 @@ def parse_whatsapp_export(
     try:
         tz = ZoneInfo(timezone)
     except Exception:
-        logger.warning("Invalid timezone '%s', falling back to America/Chicago.", timezone)
-        tz = ZoneInfo("America/Chicago")
+        logger.warning("Invalid timezone '%s', falling back to Europe/Belgrade.", timezone)
+        tz = ZoneInfo("Europe/Belgrade")
 
     since_date = date.fromisoformat(since) if since else None
     until_date = date.fromisoformat(until) if until else None

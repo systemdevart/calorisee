@@ -117,6 +117,8 @@ export interface MessageSummary {
   is_food: boolean;
   food_confidence: number;
   food_context: string;
+  meal_name: string | null;
+  visual_description: string | null;
   total_calories: number | null;
   protein_g: number | null;
   carbs_g: number | null;

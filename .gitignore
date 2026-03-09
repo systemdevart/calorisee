@@ -8,6 +8,8 @@ build/
 run_*/
 output/
 *.db
+data/
 .venv/
 venv/
 test_fixtures/
+node_modules/

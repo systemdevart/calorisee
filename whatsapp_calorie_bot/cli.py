@@ -49,8 +49,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--timezone",
-        default="America/Chicago",
-        help="Timezone for timestamp parsing (default: America/Chicago).",
+        default="Europe/Belgrade",
+        help="Timezone for timestamp parsing (default: Europe/Belgrade).",
     )
     p.add_argument("--max_messages", type=int, default=None, help="Process at most N messages (for testing).")
     p.add_argument("--since", default=None, help="Only process messages on or after YYYY-MM-DD.")

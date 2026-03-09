@@ -29,6 +29,8 @@ def _msg_to_summary(m: Message, dataset: Dataset) -> dict:
         is_food=cls.get("is_food", False),
         food_confidence=cls.get("food_confidence", 0.0),
         food_context=cls.get("food_context", "non_food"),
+        meal_name=est.get("meal_name"),
+        visual_description=est.get("visual_description"),
         total_calories=est.get("total_calories"),
         protein_g=est.get("total_protein_g"),
         carbs_g=est.get("total_carbs_g"),
@@ -45,7 +47,7 @@ def list_days(dataset_id: str, db: Session = Depends(get_db)):
     if not dataset:
         raise HTTPException(404, "Dataset not found")
 
-    tz = ZoneInfo(dataset.timezone or "America/Chicago")
+    tz = ZoneInfo(dataset.timezone or "Europe/Belgrade")
     msgs = db.query(Message).filter(Message.dataset_id == dataset_id).all()
 
     daily: dict[str, dict] = defaultdict(lambda: {"count": 0, "food_count": 0, "calories": 0})
@@ -73,7 +75,7 @@ def get_day(dataset_id: str, day: str, db: Session = Depends(get_db)):
     if not dataset:
         raise HTTPException(404, "Dataset not found")
 
-    tz = ZoneInfo(dataset.timezone or "America/Chicago")
+    tz = ZoneInfo(dataset.timezone or "Europe/Belgrade")
     msgs = (
         db.query(Message)
         .filter(Message.dataset_id == dataset_id)

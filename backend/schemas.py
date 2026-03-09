@@ -6,13 +6,13 @@ from pydantic import BaseModel
 # -- Import --
 class DriveImportRequest(BaseModel):
     gdrive_url: str
-    timezone: str = "America/Chicago"
+    timezone: str = "Europe/Belgrade"
     threshold: float = 0.6
     force_redo: bool = False
 
 
 class UploadImportFields(BaseModel):
-    timezone: str = "America/Chicago"
+    timezone: str = "Europe/Belgrade"
     threshold: float = 0.6
     force_redo: bool = False
 
@@ -75,6 +75,8 @@ class MessageSummary(BaseModel):
     is_food: bool
     food_confidence: float
     food_context: str
+    meal_name: str | None = None
+    visual_description: str | None = None
     total_calories: float | None = None
     protein_g: float | None = None
     carbs_g: float | None = None

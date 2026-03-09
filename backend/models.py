@@ -24,7 +24,7 @@ class Dataset(Base):
     id = Column(String, primary_key=True, default=new_id)
     name = Column(String, default="")
     created_at = Column(DateTime, default=utcnow)
-    timezone = Column(String, default="America/Chicago")
+    timezone = Column(String, default="Europe/Belgrade")
     source_type = Column(String, default="upload")  # "drive" | "upload"
     status = Column(String, default="pending")  # pending | processing | completed | failed
     data_dir = Column(String, default="")

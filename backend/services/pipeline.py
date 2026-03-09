@@ -12,7 +12,7 @@ from backend.services.job_manager import update_job
 from whatsapp_calorie_bot.gdrive import download_gdrive_file
 from whatsapp_calorie_bot.extract import extract_archive
 from whatsapp_calorie_bot.whatsapp_parse import parse_whatsapp_export
-from whatsapp_calorie_bot.inference import run_inference_pipeline
+
 from whatsapp_calorie_bot.storage import Storage
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def run_import_pipeline(
     *,
     gdrive_url: str | None = None,
     archive_path: str | None = None,
-    timezone: str = "America/Chicago",
+    timezone: str = "Europe/Belgrade",
     threshold: float = 0.6,
     force_redo: bool = False,
 ):
@@ -131,40 +131,32 @@ def _run(
                message=f"Done! {len(enriched)} messages, {food_count} food entries.")
 
 
-def _run_inference_with_progress(messages, storage, force_redo, threshold, callback):
-    """Wrapper around run_inference_pipeline that calls progress callback."""
-    from whatsapp_calorie_bot.inference import classify_message, estimate_calories
+def _run_inference_with_progress(messages, storage, force_redo, threshold, callback,
+                                 max_workers=10):
+    """Run inference in parallel with progress callbacks."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from whatsapp_calorie_bot.inference import _process_single_message
+    import threading
 
-    enriched = []
     total = len(messages)
+    enriched: list[dict | None] = [None] * total
+    done_count = 0
+    counter_lock = threading.Lock()
 
-    for i, msg in enumerate(messages):
-        msg_id = msg["msg_id"]
+    def _process(i: int, msg: dict) -> tuple[int, dict]:
+        return i, _process_single_message(
+            msg, storage, force_redo, threshold, "gpt-4.1-mini", "gpt-4.1",
+        )
 
-        if not force_redo:
-            cached = storage.get_inference(msg_id)
-            if cached:
-                msg["classification"] = cached.get("classification", {})
-                msg["estimation"] = cached.get("estimation")
-                enriched.append(msg)
-                callback(i + 1, msg)
-                continue
-
-        classification = classify_message(msg)
-        msg["classification"] = classification
-
-        estimation = None
-        if classification.get("is_food") and classification.get("food_confidence", 0) >= threshold:
-            estimation = estimate_calories(msg)
-        msg["estimation"] = estimation
-
-        storage.store_inference(msg_id, {
-            "classification": classification,
-            "estimation": estimation,
-        })
-
-        enriched.append(msg)
-        callback(i + 1, msg)
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = {executor.submit(_process, i, msg): i for i, msg in enumerate(messages)}
+        for future in as_completed(futures):
+            i, result = future.result()
+            enriched[i] = result
+            with counter_lock:
+                done_count += 1
+                current = done_count
+            callback(current, result)
 
     return enriched
 

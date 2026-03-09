@@ -17,12 +17,12 @@ def _parse_date(ts_str: str, tz: ZoneInfo) -> date | None:
         return None
 
 
-def compute_stats(enriched: list[dict], timezone: str = "America/Chicago") -> dict:
+def compute_stats(enriched: list[dict], timezone: str = "Europe/Belgrade") -> dict:
     """Compute all statistics from enriched messages."""
     try:
         tz = ZoneInfo(timezone)
     except Exception:
-        tz = ZoneInfo("America/Chicago")
+        tz = ZoneInfo("Europe/Belgrade")
 
     # Build daily buckets
     daily: dict[date, dict] = defaultdict(lambda: {

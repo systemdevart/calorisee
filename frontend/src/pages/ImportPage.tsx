@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Upload, Link as LinkIcon, Trash2 } from 'lucide-react';
@@ -6,12 +6,35 @@ import { importDrive, importUpload, listDatasets, deleteDataset } from '../api/c
 import { useJobSSE } from '../hooks/useJobSSE';
 import ProgressStepper from '../components/ProgressStepper';
 
+const STORAGE_KEY = 'calorisee_my_datasets';
+
+function getMyDatasetIds(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+function addMyDatasetId(id: string) {
+  const ids = getMyDatasetIds();
+  if (!ids.includes(id)) {
+    ids.unshift(id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+  }
+}
+
+function removeMyDatasetId(id: string) {
+  const ids = getMyDatasetIds().filter(x => x !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(ids));
+}
+
 export default function ImportPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'drive' | 'upload'>('upload');
   const [url, setUrl] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [timezone, setTimezone] = useState('America/Chicago');
+  const [timezone, setTimezone] = useState('Europe/Belgrade');
   const [threshold, setThreshold] = useState(0.6);
   const [forceRedo, setForceRedo] = useState(false);
   const [jobId, setJobId] = useState<string | null>(null);
@@ -21,10 +44,14 @@ export default function ImportPage() {
 
   const job = useJobSSE(jobId);
 
-  const { data: datasets, refetch: refetchDatasets } = useQuery({
+  const myIds = getMyDatasetIds();
+
+  const { data: allDatasets, refetch: refetchDatasets } = useQuery({
     queryKey: ['datasets'],
     queryFn: listDatasets,
   });
+
+  const datasets = allDatasets?.filter(ds => myIds.includes(ds.id));
 
   const handleSubmit = async () => {
     setError('');
@@ -38,6 +65,7 @@ export default function ImportPage() {
         if (!file) { setError('Select a file'); setSubmitting(false); return; }
         res = await importUpload(file, timezone, threshold, forceRedo);
       }
+      addMyDatasetId(res.dataset_id);
       setDatasetId(res.dataset_id);
       setJobId(res.job_id);
     } catch (e) {
@@ -47,10 +75,11 @@ export default function ImportPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     await deleteDataset(id);
+    removeMyDatasetId(id);
     refetchDatasets();
-  };
+  }, [refetchDatasets]);
 
   // Navigate to dashboard when job completes
   if (job?.status === 'completed' && datasetId) {

@@ -2,6 +2,10 @@
 
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -19,7 +23,11 @@ app = FastAPI(title="CaloriSee", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://calorisee.chebakov.me",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

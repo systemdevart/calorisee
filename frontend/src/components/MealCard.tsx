@@ -3,6 +3,7 @@ import MacroBar from './MacroBar';
 
 export default function MealCard({ msg, onClick }: { msg: MessageSummary; onClick: () => void }) {
   const time = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  const displayText = msg.meal_name || msg.text;
 
   return (
     <button
@@ -18,7 +19,7 @@ export default function MealCard({ msg, onClick }: { msg: MessageSummary; onClic
             {msg.has_override && <span className="text-xs bg-amber-100 text-amber-700 px-1.5 rounded">edited</span>}
             {msg.uncertainty_level === 'high' && <span className="text-xs bg-red-100 text-red-600 px-1.5 rounded">uncertain</span>}
           </div>
-          <p className="mt-1 text-sm truncate">{msg.text}</p>
+          <p className="mt-1 text-sm font-medium truncate">{displayText}</p>
           {msg.is_food && msg.total_calories != null && !msg.excluded && (
             <div className="mt-2 space-y-1">
               <p className="text-lg font-semibold">{Math.round(msg.total_calories)} kcal</p>

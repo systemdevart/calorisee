@@ -40,7 +40,7 @@ def import_from_drive(req: DriveImportRequest, db: Session = Depends(get_db)):
 @router.post("/import/upload", response_model=ImportResponse)
 def import_from_upload(
     file: UploadFile = File(...),
-    timezone: str = Form("America/Chicago"),
+    timezone: str = Form("Europe/Belgrade"),
     threshold: float = Form(0.6),
     force_redo: bool = Form(False),
     db: Session = Depends(get_db),

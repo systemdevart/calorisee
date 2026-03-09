@@ -44,6 +44,11 @@ export default function MessageDetailModal({ datasetId, messageId, onClose }: Pr
     mutation.mutate({ excluded: !msg?.excluded });
   };
 
+  const est = msg?.estimation as Record<string, unknown> | null;
+  const items = est && Array.isArray(est.items) ? est.items as Array<Record<string, unknown>> : [];
+  const visualDesc = est?.visual_description as string | undefined;
+  const mealName = est?.meal_name as string | undefined;
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
@@ -72,6 +77,14 @@ export default function MessageDetailModal({ datasetId, messageId, onClose }: Pr
 
             {msg.is_food && msg.total_calories != null && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                {mealName && (
+                  <p className="font-semibold text-gray-800">{mealName}</p>
+                )}
+
+                {visualDesc && (
+                  <p className="text-sm text-gray-600 italic">{visualDesc}</p>
+                )}
+
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold">{Math.round(msg.total_calories)}</span>
                   <span className="text-gray-500">kcal</span>
@@ -85,23 +98,26 @@ export default function MessageDetailModal({ datasetId, messageId, onClose }: Pr
                 </div>
                 <MacroBar protein={msg.protein_g ?? 0} carbs={msg.carbs_g ?? 0} fat={msg.fat_g ?? 0} />
 
-                {msg.estimation && Array.isArray((msg.estimation as Record<string, unknown>).items) && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Items</p>
-                    <table className="w-full text-xs">
-                      <thead><tr className="text-gray-400"><th className="text-left">Item</th><th className="text-right">kcal</th><th className="text-right">P</th><th className="text-right">C</th><th className="text-right">F</th></tr></thead>
-                      <tbody>
-                        {((msg.estimation as Record<string, unknown>).items as Array<Record<string, unknown>>).map((item, i) => (
-                          <tr key={i} className="border-t border-gray-100">
-                            <td>{String(item.name)}</td>
-                            <td className="text-right">{String(item.calories)}</td>
-                            <td className="text-right">{String(item.protein_g)}</td>
-                            <td className="text-right">{String(item.carbs_g)}</td>
-                            <td className="text-right">{String(item.fat_g)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                {items.length > 0 && (
+                  <div className="mt-2 space-y-2">
+                    <p className="text-xs font-medium text-gray-500">Items breakdown</p>
+                    {items.map((item, i) => (
+                      <div key={i} className="border border-gray-100 rounded-lg p-2.5 space-y-1">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-sm font-medium">{String(item.name)}</span>
+                          <span className="text-sm font-semibold">{String(item.calories)} kcal</span>
+                        </div>
+                        {item.portion_description ? (
+                          <p className="text-xs text-gray-500">{String(item.portion_description)}</p>
+                        ) : null}
+                        <div className="flex gap-3 text-xs text-gray-400">
+                          <span>{String(item.estimated_grams ?? '?')}g</span>
+                          <span>P {String(item.protein_g)}g</span>
+                          <span>C {String(item.carbs_g)}g</span>
+                          <span>F {String(item.fat_g)}g</span>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
