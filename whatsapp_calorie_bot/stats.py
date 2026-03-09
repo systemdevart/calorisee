@@ -82,7 +82,9 @@ def compute_stats(enriched: list[dict], timezone: str = "America/Chicago") -> di
 
     # Sort dates
     sorted_dates = sorted(daily.keys())
-    today = date.today()
+    # Use the last date in the data as reference for rolling windows
+    # (so stats are meaningful even for older exports)
+    reference_date = sorted_dates[-1]
 
     # Build daily timeseries
     daily_series = {}
@@ -92,10 +94,10 @@ def compute_stats(enriched: list[dict], timezone: str = "America/Chicago") -> di
         low_conf = bucket["low_confidence_count"]
         daily_series[d.isoformat()] = {
             "date": d.isoformat(),
-            "calories_total": bucket["calories"],
-            "protein_g_total": bucket["protein_g"],
-            "carbs_g_total": bucket["carbs_g"],
-            "fat_g_total": bucket["fat_g"],
+            "calories_total": round(bucket["calories"], 1),
+            "protein_g_total": round(bucket["protein_g"], 1),
+            "carbs_g_total": round(bucket["carbs_g"], 1),
+            "fat_g_total": round(bucket["fat_g"], 1),
             "food_messages": bucket["food_messages"],
             "image_food_messages": bucket["image_food_messages"],
             "total_messages": bucket["total_messages"],
@@ -104,7 +106,7 @@ def compute_stats(enriched: list[dict], timezone: str = "America/Chicago") -> di
 
     # Rolling aggregates
     def _rolling(days: int) -> dict:
-        cutoff = today - timedelta(days=days)
+        cutoff = reference_date - timedelta(days=days)
         period_dates = [d for d in sorted_dates if d >= cutoff]
         if not period_dates:
             return {"period_days": days, "data_days": 0}

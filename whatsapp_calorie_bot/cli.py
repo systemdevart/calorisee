@@ -34,8 +34,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--gdrive_url",
-        required=True,
+        default=None,
         help="Google Drive share link to the archive (zip/rar/7z).",
+    )
+    p.add_argument(
+        "--local_archive",
+        default=None,
+        help="Path to a local archive file (skip Google Drive download).",
     )
     p.add_argument(
         "--out_dir",
@@ -54,6 +59,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--food_confidence_threshold", type=float, default=0.6, help="Min food_confidence to proceed to calorie estimation (default: 0.6).")
     p.add_argument("--openai_model_text", default="gpt-4.1-mini", help="Model for food classification (default: gpt-4.1-mini).")
     p.add_argument("--openai_model_vision", default="gpt-4.1", help="Model for calorie estimation with images (default: gpt-4.1).")
+    p.add_argument("--batch", action="store_true", help="Use OpenAI Batch API (50%% cheaper, minutes-to-hours turnaround).")
     p.add_argument("--verbose", action="store_true", help="Enable debug logging.")
     return p.parse_args(argv)
 
@@ -66,12 +72,22 @@ def main(argv: list[str] | None = None) -> None:
     out_dir = Path(args.out_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Step 1: Download
-    logger.info("Step 1/6: Downloading archive from Google Drive...")
-    input_dir = out_dir / "input"
-    input_dir.mkdir(exist_ok=True)
-    archive_path = download_gdrive_file(args.gdrive_url, input_dir)
-    logger.info("Downloaded: %s", archive_path)
+    # Step 1: Download or locate archive
+    if args.local_archive:
+        archive_path = Path(args.local_archive).resolve()
+        if not archive_path.exists():
+            logger.error("Local archive not found: %s", archive_path)
+            sys.exit(1)
+        logger.info("Step 1/6: Using local archive: %s", archive_path)
+    elif args.gdrive_url:
+        logger.info("Step 1/6: Downloading archive from Google Drive...")
+        input_dir = out_dir / "input"
+        input_dir.mkdir(exist_ok=True)
+        archive_path = download_gdrive_file(args.gdrive_url, input_dir)
+        logger.info("Downloaded: %s", archive_path)
+    else:
+        logger.error("Provide either --gdrive_url or --local_archive.")
+        sys.exit(1)
 
     # Step 2: Extract
     logger.info("Step 2/6: Extracting archive...")
@@ -95,18 +111,30 @@ def main(argv: list[str] | None = None) -> None:
         sys.exit(1)
 
     # Step 4: Store raw messages + run inference
-    logger.info("Step 4/6: Running AI inference pipeline...")
     storage = Storage(out_dir / "cache.db")
     storage.store_messages(messages)
 
-    enriched = run_inference_pipeline(
-        messages,
-        storage=storage,
-        force_redo=args.force_redo,
-        food_confidence_threshold=args.food_confidence_threshold,
-        model_text=args.openai_model_text,
-        model_vision=args.openai_model_vision,
-    )
+    if args.batch:
+        from whatsapp_calorie_bot.batch import run_batch_inference_pipeline
+        logger.info("Step 4/6: Running AI inference via Batch API (50%% cheaper)...")
+        enriched = run_batch_inference_pipeline(
+            messages,
+            storage=storage,
+            force_redo=args.force_redo,
+            food_confidence_threshold=args.food_confidence_threshold,
+            model_text=args.openai_model_text,
+            model_vision=args.openai_model_vision,
+        )
+    else:
+        logger.info("Step 4/6: Running AI inference pipeline...")
+        enriched = run_inference_pipeline(
+            messages,
+            storage=storage,
+            force_redo=args.force_redo,
+            food_confidence_threshold=args.food_confidence_threshold,
+            model_text=args.openai_model_text,
+            model_vision=args.openai_model_vision,
+        )
     food_count = sum(1 for m in enriched if m.get("classification", {}).get("is_food"))
     logger.info("Classified %d food messages out of %d total.", food_count, len(enriched))
 

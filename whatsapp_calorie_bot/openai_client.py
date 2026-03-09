@@ -71,6 +71,9 @@ def call_openai_text(
     """Call OpenAI Responses API with text-only input. Returns response text."""
     client = get_client()
     text_format = {"format": {"type": "json_object"}} if json_mode else {}
+    # Responses API requires the word "json" in input for json_object mode
+    if json_mode and "json" not in prompt.lower():
+        prompt += "\n\nRespond with valid JSON."
 
     for attempt in range(max_retries):
         try:
@@ -106,6 +109,10 @@ def call_openai_vision(
     """Call OpenAI Responses API with image(s) + text. Returns response text."""
     client = get_client()
     text_format = {"format": {"type": "json_object"}} if json_mode else {}
+
+    # Responses API requires the word "json" in input for json_object mode
+    if json_mode and "json" not in prompt.lower():
+        prompt += "\n\nRespond with valid JSON."
 
     # Build content array with text + images
     content: list[dict] = [{"type": "input_text", "text": prompt}]

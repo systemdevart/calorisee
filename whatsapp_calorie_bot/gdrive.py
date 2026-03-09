@@ -28,12 +28,20 @@ def download_gdrive_file(url: str, dest_dir: Path) -> Path:
     output_path = str(dest_dir / "archive")
     logger.info("Downloading file ID %s ...", file_id)
 
-    result = gdown.download(download_url, output_path, quiet=False, fuzzy=True)
-    if result is None:
+    try:
+        result = gdown.download(download_url, output_path, quiet=False, fuzzy=True)
+    except Exception as e:
         raise RuntimeError(
             f"Failed to download from Google Drive. "
-            f"Ensure the link is publicly shared or try a direct download URL. "
-            f"URL: {url}"
+            f"Ensure the link is set to 'Anyone with the link' sharing. "
+            f"URL: {url}\n"
+            f"Error: {e}"
+        ) from e
+
+    if result is None:
+        raise RuntimeError(
+            f"Failed to download from Google Drive (returned None). "
+            f"Ensure the link is publicly shared. URL: {url}"
         )
 
     downloaded = Path(result)
